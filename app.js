@@ -26,7 +26,7 @@ app.use(compression());
 
 // app.options('*', cors());
 // app.use(cors({ origin: '*' }));
-
+app.use(cors())
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
