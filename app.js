@@ -24,8 +24,8 @@ mongoose.connect(urlDbConnect, { useNewUrlParser: true, useUnifiedTopology: true
 app.use(morgan('dev'));
 app.use(compression());
 
-app.options('*', cors());
-app.use(cors({ origin: '*' }));
+// app.options('*', cors());
+// app.use(cors({ origin: '*' }));
 
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
