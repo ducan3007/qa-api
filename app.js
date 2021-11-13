@@ -35,8 +35,8 @@ app.use('/api', routers);
 
 const PORT = process.env.PORT || 5000;
 
-const server = http.createServer(app);
+// const server = http.createServer(app);
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
 });
