@@ -30,7 +30,6 @@ tagsModel.options.toJSON.transform = (doc, ret) => {
     return obj;
 };
 
-
 const Tags = module.exports = mongoose.model('tags', tagsModel);
 
 module.exports.getAllTags = async(result) => {
