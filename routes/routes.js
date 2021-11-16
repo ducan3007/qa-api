@@ -11,18 +11,6 @@ const authController = require('../controllers/auth')
 const verifyToken = require('../middleware/verifyToken');
 const validator = require('../utils/validator');
 
-//router.use('/auth', auth);
-
-//router.use('/users', users);
-//router.use('/posts', posts);
-//router.use('/tags', tags);
-//router.use('/posts/answers', answers);
-//router.use('/posts/comments', comments);
-
-
-
-
-
 //authentication
 router.get('/auth', verifyToken, authController.loadUser);
 router.post('/auth', validator.validatorUser, authController.login)
