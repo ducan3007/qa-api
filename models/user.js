@@ -3,8 +3,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const responseHandler = require("../utils/response");
-const { validationResult } = require("express-validator");
-const { post } = require("./vote");
 const Post = require("./posts");
 const sizeof = require("object-sizeof");
 const Answer = require("./answers");

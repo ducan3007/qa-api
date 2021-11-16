@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { response } = require("../utils/response");
 const Schema = mongoose.Schema;
 const commentSchema = require("./comments");
 const responseHandler = require("../utils/response");
