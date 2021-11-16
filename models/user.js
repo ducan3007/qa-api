@@ -10,7 +10,7 @@ const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
     username: { type: String, required: true, unique: true },
-    password: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
     email: { type: String, required: false },
     views: { type: Number, default: 0 },
     created_at: { type: Date, default: Date.now },
@@ -53,7 +53,7 @@ module.exports.register = async(newUser, result) => {
                     }
                     result(
                         null,
-                        responseHandler.response(true, 200, "User sigup successfully", {
+                        responseHandler.response(true, 200, "User signup successfully", {
                             token,
                         })
                     );
@@ -86,13 +86,12 @@ module.exports.login = async(user, result) => {
     try {
         const findUser = await Users.findOne({
             username: user.username,
-        });
+        }, { password: 1 });
         if (findUser) {
             const isMatch = await bcrypt.compare(
                 user.password,
                 findUser.password.toString()
             );
-
             if (!isMatch) {
                 result(
                     responseHandler.response(false, 400, "Incorrect password", null),
