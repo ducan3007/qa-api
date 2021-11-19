@@ -175,17 +175,17 @@ module.exports.getOneUser = async(id, results) => {
                 { $unwind: "$tagname" },
                 { $group: { _id: "$tagname", count: { $sum: 1 } } },
             ]),
-            Post.aggregate([
-                { $unwind: "$votes" },
-                { $match: { user_id: mongoose.Types.ObjectId(id) } },
-                { $project: { "votes.vote": 1, _id: 0 } },
-                { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
+           Post.aggregate([
+               { $project:{votes:1,_id:0} },
+               { $unwind:"$votes"},
+               { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+               { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
             Answer.aggregate([
-                { $unwind: "$votes" },
-                { $match: { author: mongoose.Types.ObjectId(id) } },
-                { $project: { "votes.vote": 1, _id: 0 } },
-                { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
+               { $project:{votes:1,_id:0} },
+               { $unwind:"$votes"},
+               { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+               { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
         ]).then((result) => {
             result = JSON.parse(JSON.stringify(result));
@@ -245,13 +245,13 @@ module.exports.getAllUser = (results) => {
                             { $unwind:"$votes"},
                             { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
-                        ]),
+                        ]);
                         Answer.aggregate([
                             { $project:{votes:1,_id:0} },
                             { $unwind:"$votes"},
                             { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
-                        ]),
+                        ]);
                     ]).then((result) => {
                         a.id = a._id;
                         a.votes =
