@@ -241,15 +241,15 @@ module.exports.getAllUser = (results) => {
                 for (const a of result) {
                     await Promise.all([
                         Post.aggregate([
-                            { $unwind: "$votes" },
-                            { $match: { user_id: mongoose.Types.ObjectId(a._id) } },
-                            { $project: { "votes.vote": 1, _id: 0 } },
+                            { $project:{votes:1,_id:0} },
+                            { $unwind:"$votes"},
+                            { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
                         Answer.aggregate([
-                            { $unwind: "$votes" },
-                            { $match: { author: mongoose.Types.ObjectId(a._id) } },
-                            { $project: { "votes.vote": 1, _id: 0 } },
+                            { $project:{votes:1,_id:0} },
+                            { $unwind:"$votes"},
+                            { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
                     ]).then((result) => {
