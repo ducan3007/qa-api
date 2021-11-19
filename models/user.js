@@ -175,17 +175,17 @@ module.exports.getOneUser = async(id, results) => {
                 { $unwind: "$tagname" },
                 { $group: { _id: "$tagname", count: { $sum: 1 } } },
             ]),
-           Post.aggregate([
-               { $project:{votes:1,_id:0} },
-               { $unwind:"$votes"},
-               { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
-               { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
+            Post.aggregate([
+                { $project: { votes: 1, _id: 0 } },
+                { $unwind: "$votes" },
+                { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+                { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
             Answer.aggregate([
-               { $project:{votes:1,_id:0} },
-               { $unwind:"$votes"},
-               { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
-               { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
+                { $project: { votes: 1, _id: 0 } },
+                { $unwind: "$votes" },
+                { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+                { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
         ]).then((result) => {
             result = JSON.parse(JSON.stringify(result));
@@ -241,17 +241,17 @@ module.exports.getAllUser = (results) => {
                 for (const a of result) {
                     await Promise.all([
                         Post.aggregate([
-                            { $project:{votes:1,_id:0} },
-                            { $unwind:"$votes"},
-                            { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+                            { $project: { votes: 1, _id: 0 } },
+                            { $unwind: "$votes" },
+                            { $match: { "votes.user_id": mongoose.Types.ObjectId(a._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
-                        ]);
+                        ]),
                         Answer.aggregate([
-                            { $project:{votes:1,_id:0} },
-                            { $unwind:"$votes"},
-                            { $match: { "votes.user_id": mongoose.Types.ObjectId(id) } },
+                            { $project: { votes: 1, _id: 0 } },
+                            { $unwind: "$votes" },
+                            { $match: { "votes.user_id": mongoose.Types.ObjectId(a._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
-                        ]);
+                        ])
                     ]).then((result) => {
                         a.id = a._id;
                         a.votes =
