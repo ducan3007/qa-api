@@ -238,31 +238,30 @@ module.exports.getAllUser = (results) => {
                 },
             ])
             .then(async(result) => {
-                const promises = result.map(async(user) => {
-                    const result = await Promise.all([
+                for (const a of result) {
+                    await Promise.all([
                         Post.aggregate([
                             { $project: { votes: 1, user_id: 1, _id: 0 } },
                             { $unwind: "$votes" },
-                            { $match: { "user_id": mongoose.Types.ObjectId(user._id) } },
+                            { $match: { "user_id": mongoose.Types.ObjectId(a._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
                         Answer.aggregate([
                             { $project: { votes: 1, author: 1, _id: 0 } },
                             { $unwind: "$votes" },
-                            { $match: { "author": mongoose.Types.ObjectId(user._id) } },
+                            { $match: { "author": mongoose.Types.ObjectId(a._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
-                    ]);
-                    user.id = user._id;
-                    user.votes =
-                        (result[0][0] != undefined ? result[0][0].votes : 0) +
-                        (result[1][0] != undefined ? result[1][0].votes : 0);
-                    delete user._id;
-                    return user;
-                })
-                Promise.all(promises).then((result) => {
-                    results(null, responseHandler.response(true, 200, "Success", result));
-                });
+                    ]).then((result) => {
+                        a.id = a._id;
+                        a.votes =
+                            (result[0][0] != undefined ? result[0][0].votes : 0) +
+                            (result[1][0] != undefined ? result[1][0].votes : 0);
+
+                        delete a._id;
+                    });
+                }
+                results(null, responseHandler.response(true, 200, "Success", result));
             })
             .catch((err) => {
                 console.log(err);
@@ -276,3 +275,4 @@ module.exports.getAllUser = (results) => {
         results(responseHandler.response(false, 404, "Not found", null), null);
     }
 };
+
