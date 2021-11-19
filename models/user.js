@@ -176,15 +176,15 @@ module.exports.getOneUser = async(id, results) => {
                 { $group: { _id: "$tagname", count: { $sum: 1 } } },
             ]),
             Post.aggregate([
-                { $match: { "user_id": mongoose.Types.ObjectId(id) } },
                 { $project: { votes: 1, user_id: 1, _id: 0 } },
                 { $unwind: "$votes" },
+                { $match: { "user_id": mongoose.Types.ObjectId(id) } },
                 { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
             Answer.aggregate([
-                { $match: { "author": mongoose.Types.ObjectId(id) } },
                 { $project: { votes: 1, author: 1, _id: 0 } },
                 { $unwind: "$votes" },
+                { $match: { "author": mongoose.Types.ObjectId(id) } },
                 { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ])
         ]).then((result) => {
@@ -243,15 +243,15 @@ module.exports.getAllUser = (results) => {
                 const promises = result.map(async(user) => {
                     const result = await Promise.all([
                         Post.aggregate([
-                            { $match: { "user_id": mongoose.Types.ObjectId(user._id) } },
                             { $project: { votes: 1, user_id: 1, _id: 0 } },
                             { $unwind: "$votes" },
+                            { $match: { "user_id": mongoose.Types.ObjectId(user._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
                         Answer.aggregate([
-                            { $match: { "author": mongoose.Types.ObjectId(user._id) } },
                             { $project: { votes: 1, author: 1, _id: 0 } },
                             { $unwind: "$votes" },
+                            { $match: { "author": mongoose.Types.ObjectId(user._id) } },
                             { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
                         ]),
                     ]);
