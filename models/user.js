@@ -178,13 +178,13 @@ module.exports.getOneUser = async(id, results) => {
             Post.aggregate([
                 { $project: { votes: 1, user_id: 1, _id: 0 } },
                 { $unwind: "$votes" },
-                { $match: { "user_id": mongoose.Types.ObjectId(a._id) } },
+                { $match: { "user_id": mongoose.Types.ObjectId(id) } },
                 { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ]),
             Answer.aggregate([
                 { $project: { votes: 1, author: 1, _id: 0 } },
                 { $unwind: "$votes" },
-                { $match: { "author": mongoose.Types.ObjectId(a._id) } },
+                { $match: { "author": mongoose.Types.ObjectId(id) } },
                 { $group: { _id: null, votes: { $sum: "$votes.vote" } } },
             ])
         ]).then((result) => {
