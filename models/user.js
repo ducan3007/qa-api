@@ -32,8 +32,9 @@ module.exports.register = async(newUser, result) => {
             responseHandler.response(false, 400, "Password and confirm password does not match", null),
             null
         );
+        return;
     }
-    else{
+    
     const salt = bcrypt.genSaltSync(10);
     newUser.password = await bcrypt.hash(newUser.password, salt);
     newUser.username = newUser.username.toLowerCase();
@@ -68,7 +69,7 @@ module.exports.register = async(newUser, result) => {
             );
         }
     } catch (err) {}
-    }
+    
 };
 
 module.exports.loadUser = (userId, result) => {
