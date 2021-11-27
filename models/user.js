@@ -27,6 +27,12 @@ userSchema.options.toJSON.transform = (doc, ret) => {
 const Users = (module.exports = mongoose.model("users", userSchema));
 
 module.exports.register = async(newUser, result) => {
+    if (newUser.confirmPassword != newUser.password) {
+        result(
+            responseHandler.response(false, 400, "Password and confirm password does not match", null),
+            null
+        );
+    }
     const salt = bcrypt.genSaltSync(10);
     newUser.password = await bcrypt.hash(newUser.password, salt);
     newUser.username = newUser.username.toLowerCase();
