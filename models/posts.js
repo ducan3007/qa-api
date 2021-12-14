@@ -76,7 +76,7 @@ const formatResult = (result) => {
         obj.created_at = doc.created_at;
         return obj;
     });
-}
+};
 module.exports.createPost = (req, result) => {
     const tags = req.body.tagname.toString().split(/[,]+/);
 
@@ -224,17 +224,31 @@ module.exports.getPostComments = (req, results) => {
 };
 
 module.exports.getPosts = (req, results) => {
+    let page = req.query.page;
+    if (page == undefined) {
+        page = 1;
+    }
     if (req.query.search != "null" && req.query.search != undefined) {
-        let query = decodeURIComponent(req.query.search);
         // regex is not allowed in free Atlas tier
         Post.aggregate([{
                 $search: {
                     index: "post_full_textsearch",
                     text: {
-                        query: query,
+                        query: decodeURIComponent(req.query.search),
                         path: ["title", "body", "tagname"],
                     },
                 },
+            },
+            {
+                $sort: {
+                    created_at: -1,
+                },
+            },
+            {
+                $skip: 5 * (page - 1),
+            },
+            {
+                $limit: 5,
             },
             {
                 $lookup: {
@@ -260,72 +274,121 @@ module.exports.getPosts = (req, results) => {
                     "Author.username": 1,
                 },
             },
-            {
-                $sort: {
-                    created_at: -1,
+        ]).then(async(result) => {
+            let total = await Post.aggregate([{
+                    $search: {
+                        index: "post_full_textsearch",
+                        text: {
+                            query: decodeURIComponent(req.query.search),
+                            path: ["title", "body", "tagname"],
+                        },
+                    },
                 },
-            },
-        ]).then((result) => {
-            result = formatResult(result);
-            results(
-                null,
-                responseHandler.response(true, 200, "successfully", result)
-            );
+                {
+                    $count: "result_count",
+                },
+            ]);
+            if (total[0] === undefined) {
+                results(
+                    null,
+                    responseHandler.response(true, 200, "successfully", [
+                        { totalPost: 0 },
+                    ])
+                );
+            } else {
+                result = formatResult(result);
+                result[0].totalPost = total[0].result_count;
+                results(
+                    null,
+                    responseHandler.response(true, 200, "successfully", result)
+                );
+            }
         });
     } else if (req.params.tagname) {
         Post.find({ tagname: decodeURIComponent(req.params.tagname) })
             .populate("user_id", "username")
             .populate("answers", "votes")
             .sort("-created_at")
+            .skip(5 * (page - 1))
+            .limit(5)
             .lean()
-            .then((result) => {
+            .then(async(result) => {
+                let total = await Post.find({
+                    tagname: decodeURIComponent(req.params.tagname),
+                }).count();
                 result = formatResult(result);
-                if (req.url.includes("top")) {
-                    result = result.sort((a, b) => {
-                        return b.answer_count - a.answer_count != 0 ?
-                            b.answer_count - a.answer_count :
-                            b.comment_count - a.comment_count;
-                    });
+                if (!total) {
+                    results(
+                        null,
+                        responseHandler.response(true, 200, "successfully", [
+                            { totalPost: 0 },
+                        ])
+                    );
+                } else {
+                    result[0].totalPost = total;
+                    results(
+                        null,
+                        responseHandler.response(true, 200, "successfully", result)
+                    );
                 }
-                results(
-                    null,
-                    responseHandler.response(true, 200, "successfully", result)
-                );
             })
             .catch((err) => {
                 console.log(err);
-                results(
-                    responseHandler.response(false, 400, "Post not found", null),
-                    null
-                );
             });
     } else {
-        Post.find()
-            .populate("user_id", "username")
-            .populate("answers", "votes")
-            .sort("-created_at")
-            .lean()
-            .then((result) => {
-                result = formatResult(result);
-                if (req.url.includes("top")) {
+        if (req.url.includes("top")) {
+            Post.find()
+                .populate("user_id", "username")
+                .populate("answers", "votes")
+                .sort("-created_at")
+                .lean()
+                .then((result) => {
+                    result = formatResult(result);
                     result = result.sort((a, b) => {
                         return b.answer_count - a.answer_count != 0 ?
                             b.answer_count - a.answer_count :
+                            b.views - a.views != 0 ?
+                            b.views - a.views :
                             b.comment_count - a.comment_count;
                     });
-                }
-                results(
-                    null,
-                    responseHandler.response(true, 200, "successfully", result)
-                );
-            })
-            .catch((err) => {
-                console.log(err);
-                results(
-                    responseHandler.response(false, 400, "Post not found", null),
-                    null
-                );
-            });
+                    result = result.slice(0, 12);
+                    results(
+                        null,
+                        responseHandler.response(true, 200, "successfully", result)
+                    );
+                })
+                .catch((err) => {
+                    console.log(err);
+                    results(
+                        responseHandler.response(false, 400, "Post not found", null),
+                        null
+                    );
+                });
+        } else if (page) {
+            Post.find()
+                .populate("user_id", "username")
+                .populate("answers", "votes")
+                .sort("-created_at")
+                .skip(5 * (page - 1))
+                .limit(5)
+                .lean()
+                .then(async(result) => {
+                    let total = await Post.find().count();
+                    result = formatResult(result);
+                    result[0].totalPost = total;
+                    results(
+                        null,
+                        responseHandler.response(true, 200, "successfully", result)
+                    );
+                })
+                .catch((err) => {
+                    console.log(err);
+                    results(
+                        responseHandler.response(false, 400, "Post not found", null),
+                        null
+                    );
+                });
+        }
     }
 };
 module.exports.getOnePost = (req, results) => {

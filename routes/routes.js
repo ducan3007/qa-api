@@ -40,8 +40,9 @@ router.get('/users/:id', userController.getUsers);
 router.get('/users/:id/posts/', userController.getUserPost);
 
 //tags
-router.get('/tags', tagController.getAllTags);
-router.get('/tags/:tagname', tagController.getOneTags);
+router.get('/top/tags', tagController.getTags);
+router.get('/tags', tagController.getTags);
+router.get('/tags/:tagname', tagController.getOneTag);
 
 //answers
 router.get('/answers/comments/:answer_id', commentsController.getAnswerComment);
