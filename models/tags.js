@@ -46,7 +46,6 @@ module.exports.getTags = (req, results) => {
             });
     } else {
         Tags.find()
-            .sort("-posts_count")
             .skip(20 * (page - 1))
             .limit(20)
             .lean()
