@@ -67,14 +67,16 @@ const formatResult = (result) => {
             obj.username = doc.user_id.username;
         }
         obj.title = doc.title;
+
         obj.body = doc.body;
         obj.tagname = doc.tagname;
         obj.votes = doc.votes;
         obj.answer_count = doc.answers != undefined ? doc.answers.length : 0;
-        obj.comment_count = doc.comments != undefined ? doc.comments.length : 0;
         obj.views = doc.views;
         obj.created_at = doc.created_at;
+
         return obj;
+
     });
 };
 module.exports.createPost = (req, result) => {
@@ -198,29 +200,85 @@ module.exports.addPostComment = (req, results) => {
     }
 };
 module.exports.getPostComments = (req, results) => {
-    const postId = req.params.post_id;
-    Post.findById({ _id: postId }, { comments: 1 })
-        .populate("comments.Author", "username")
-        .lean()
-        .then((result) => {
-            if (result) {
-                const data = JSON.parse(JSON.stringify(result.comments)).map((doc) => {
-                    doc.username = doc.Author.username;
-                    doc.user_id = doc.Author._id;
-                    doc.id = doc._id;
-                    delete doc.Author;
-                    delete doc._id;
-                    return doc;
-                });
+    try {
+        const postId = req.params.post_id;
+
+        // Post.aggregate([{
+        //         $match: {
+        //             _id: mongoose.Types.ObjectId(postId),
+        //         }
+        //     },
+        //     {
+        //         $project: {
+        //             comments: 1
+        //         }
+        //     },
+        //     {
+        //         $lookup: {
+        //             from: "users",
+        //             localField: "comments.Author",
+        //             foreignField: "_id",
+        //             as: "Author",
+        //         },
+        //     },
+        //  {
+        //     $match: {
+        //         "Author.active": true
+        //     }
+
+        // },
+        // {
+        //     $project: {
+        //         _id: 1,
+        //         title: 1,
+        //         user_id: 1,
+        //         body: 1,
+        //         tagname: 1,
+        //         answers: 1,
+        //         votes: 1,
+        //         created_at: 1,
+        //         views: 1,
+        //         "Author._id": 1,
+        //         "Author.username": 1
+        //     }
+        // }
+        // ]).then((result) => {
+        //     results(
+        //         null,
+        //         responseHandler.response(true, 200, "successfully", result)
+        //     );
+        // })
+
+        Post.findById({ _id: postId }, { comments: 1 })
+            .populate("comments.Author", "username active")
+            .lean()
+            .then((result) => {
+                const obj = [];
+                for (let a of result.comments) {
+                    if (a.Author.active === true) {
+                        obj.push({
+                            id: a._id,
+                            user_id: a.Author._id,
+                            username: a.Author.username,
+                            body: a.body,
+                            post_id: a.post_id,
+                            created_at: a.created_at
+                        })
+                    }
+                }
                 results(
                     null,
-                    responseHandler.response(true, 200, "successfully", data)
+                    responseHandler.response(true, 200, "successfully", obj)
                 );
-            }
-        })
-        .catch((err) => {
-            results(responseHandler.response(false, 404, "Not found", null), null);
-        });
+
+            })
+            .catch((err) => {
+                results(responseHandler.response(false, 404, "Not found", null), null);
+            });
+    } catch {
+
+    }
+
 };
 
 module.exports.getPosts = (req, results) => {
@@ -240,6 +298,19 @@ module.exports.getPosts = (req, results) => {
                 },
             },
             {
+                $lookup: {
+                    from: "users",
+                    localField: "user_id",
+                    foreignField: "_id",
+                    as: "Author",
+                },
+            },
+            {
+                $match: {
+                    "Author.active": true
+                }
+            },
+            {
                 $sort: {
                     created_at: -1,
                 },
@@ -249,14 +320,6 @@ module.exports.getPosts = (req, results) => {
             },
             {
                 $limit: 5,
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "user_id",
-                    foreignField: "_id",
-                    as: "Author",
-                },
             },
             {
                 $project: {
@@ -275,6 +338,7 @@ module.exports.getPosts = (req, results) => {
                 },
             },
         ]).then(async(result) => {
+
             let total = await Post.aggregate([{
                     $search: {
                         index: "post_full_textsearch",
@@ -285,10 +349,24 @@ module.exports.getPosts = (req, results) => {
                     },
                 },
                 {
+                    $lookup: {
+                        from: "users",
+                        localField: "user_id",
+                        foreignField: "_id",
+                        as: "Author",
+                    },
+                },
+                {
+                    $match: {
+                        "Author.active": true
+                    }
+                },
+                {
                     $count: "result_count",
                 },
             ]);
-            if (total[0] === undefined) {
+
+            if (total[0] === undefined || total === undefined) {
                 results(
                     null,
                     responseHandler.response(true, 200, "successfully", [
@@ -305,19 +383,75 @@ module.exports.getPosts = (req, results) => {
             }
         });
     } else if (req.params.tagname) {
-        Post.find({ tagname: decodeURIComponent(req.params.tagname) })
-            .populate("user_id", "username")
-            .populate("answers", "votes")
-            .sort("-created_at")
-            .skip(5 * (page - 1))
-            .limit(5)
-            .lean()
-            .then(async(result) => {
-                let total = await Post.find({
-                    tagname: decodeURIComponent(req.params.tagname),
-                }).count();
-                result = formatResult(result);
-                if (!total) {
+        Post.aggregate([{
+                    $match: {
+                        tagname: decodeURIComponent(req.params.tagname)
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "user_id",
+                        foreignField: "_id",
+                        as: "Author",
+                    },
+                },
+                {
+                    $match: {
+                        "Author.active": true
+                    }
+                },
+                {
+                    $sort: {
+                        created_at: -1,
+                    },
+                },
+                {
+                    $skip: 5 * (page - 1),
+                },
+                {
+                    $limit: 5,
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        user_id: 1,
+                        body: 1,
+                        tagname: 1,
+                        answers: 1,
+                        votes: 1,
+                        comments: 1,
+                        created_at: 1,
+                        views: 1,
+                        "Author._id": 1,
+                        "Author.username": 1,
+                    },
+                },
+            ]).then(async(result) => {
+                let total = await Post.aggregate([{
+                        $match: {
+                            tagname: decodeURIComponent(req.params.tagname)
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "user_id",
+                            foreignField: "_id",
+                            as: "Author",
+                        },
+                    },
+                    {
+                        $match: {
+                            "Author.active": true
+                        }
+                    }, {
+                        $count: "result_count",
+                    }
+                ])
+
+                if (total[0] === undefined || total === undefined) {
                     results(
                         null,
                         responseHandler.response(true, 200, "successfully", [
@@ -325,7 +459,8 @@ module.exports.getPosts = (req, results) => {
                         ])
                     );
                 } else {
-                    result[0].totalPost = total;
+                    result = formatResult(result);
+                    result[0].totalPost = total[0].result_count;
                     results(
                         null,
                         responseHandler.response(true, 200, "successfully", result)
@@ -337,12 +472,40 @@ module.exports.getPosts = (req, results) => {
             });
     } else {
         if (req.url.includes("top")) {
-            Post.find()
-                .populate("user_id", "username")
-                .populate("answers", "votes")
-                .sort("-created_at")
-                .lean()
-                .then((result) => {
+            Post.aggregate([{
+                        $lookup: {
+                            from: "users",
+                            localField: "user_id",
+                            foreignField: "_id",
+                            as: "Author",
+                        },
+                    },
+                    {
+                        $match: {
+                            "Author.active": true
+                        }
+                    },
+                    {
+                        $sort: {
+                            created_at: -1,
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            title: 1,
+                            user_id: 1,
+                            body: 1,
+                            tagname: 1,
+                            answers: 1,
+                            votes: 1,
+                            created_at: 1,
+                            views: 1,
+                            "Author._id": 1,
+                            "Author.username": 1,
+                        },
+                    },
+                ]).then((result) => {
                     result = formatResult(result);
                     result = result.sort((a, b) => {
                         return b.answer_count - a.answer_count != 0 ?
@@ -365,21 +528,84 @@ module.exports.getPosts = (req, results) => {
                     );
                 });
         } else if (page) {
-            Post.find()
-                .populate("user_id", "username")
-                .populate("answers", "votes")
-                .sort("-created_at")
-                .skip(5 * (page - 1))
-                .limit(5)
-                .lean()
-                .then(async(result) => {
-                    let total = await Post.find().count();
-                    result = formatResult(result);
-                    result[0].totalPost = total;
-                    results(
-                        null,
-                        responseHandler.response(true, 200, "successfully", result)
-                    );
+            Post.aggregate([{
+                        $lookup: {
+                            from: "users",
+                            localField: "user_id",
+                            foreignField: "_id",
+                            as: "Author",
+                        },
+                    },
+                    {
+                        $match: {
+                            "Author.active": true
+                        }
+                    },
+                    {
+                        $sort: {
+                            created_at: -1,
+                        },
+                    },
+                    {
+                        $skip: 5 * (page - 1),
+                    },
+                    {
+                        $limit: 5,
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            title: 1,
+                            user_id: 1,
+                            body: 1,
+                            tagname: 1,
+                            answers: 1,
+                            votes: 1,
+                            created_at: 1,
+                            views: 1,
+                            "Author._id": 1,
+                            "Author.username": 1,
+                        },
+                    },
+                ]).then(async(result) => {
+                    console.log("ddddddddddd")
+                        // results(
+                        //     null,
+                        //     responseHandler.response(true, 200, "successfully", result)
+                        // );
+
+                    let total = await Post.aggregate([{
+                            $lookup: {
+                                from: "users",
+                                localField: "user_id",
+                                foreignField: "_id",
+                                as: "Author",
+                            },
+                        },
+                        {
+                            $match: {
+                                "Author.active": true
+                            }
+                        },
+                        {
+                            $count: "result_count",
+                        },
+                    ]);
+                    if (total[0] === undefined || total === undefined) {
+                        results(
+                            null,
+                            responseHandler.response(true, 200, "successfully", [
+                                { totalPost: 0 },
+                            ])
+                        );
+                    } else {
+                        result = formatResult(result);
+                        result[0].totalPost = total[0].result_count;
+                        results(
+                            null,
+                            responseHandler.response(true, 200, "successfully", result)
+                        );
+                    }
                 })
                 .catch((err) => {
                     console.log(err);
@@ -388,6 +614,37 @@ module.exports.getPosts = (req, results) => {
                         null
                     );
                 });
+
+
+
+            // Post.find()
+            //     .populate("user_id", "username")
+            //     .sort("-created_at")
+            //     .skip(5 * (page - 1))
+            //     .limit(5)
+            //     .lean()
+            //     .then(async(result) => {
+            //         console.log("ddddddddddd")
+            //             // results(
+            //             //     null,
+            //             //     responseHandler.response(true, 200, "successfully", result)
+            //             // );
+
+            //         let total = await Post.find().count();
+            //         result = formatResult(result);
+            //         result[0].totalPost = total;
+            //         results(
+            //             null,
+            //             responseHandler.response(true, 200, "successfully", result)
+            //         );
+            //     })
+            //     .catch((err) => {
+            //         console.log(err);
+            //         results(
+            //             responseHandler.response(false, 400, "Post not found", null),
+            //             null
+            //         );
+            //     });
         }
     }
 };
@@ -397,31 +654,78 @@ module.exports.getOnePost = (req, results) => {
         $inc: {
             views: 1,
         },
+    }).then(() => {
+        Post.aggregate([{
+                    $match: {
+                        _id: mongoose.Types.ObjectId(postId),
+                    }
+                }, {
+                    $lookup: {
+                        from: "users",
+                        localField: "user_id",
+                        foreignField: "_id",
+                        as: "Author",
+                    },
+                },
+                {
+                    $match: {
+                        "Author.active": true
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        user_id: 1,
+                        body: 1,
+                        tagname: 1,
+                        answers: 1,
+                        votes: 1,
+                        created_at: 1,
+                        views: 1,
+                        "Author._id": 1,
+                        "Author.username": 1
+                    }
+                }
+            ]).then((doc) => {
+
+
+                const obj = {};
+                obj.id = doc[0]._id;
+                obj.user_id = doc[0].Author[0]._id;
+                obj.username = doc[0].Author[0].username;
+                obj.title = doc[0].title;
+                obj.body = doc[0].body;
+                obj.tagname = doc[0].tagname;
+                obj.answer_count = doc[0].answers != undefined ? doc[0].answers.length : 0;
+                obj.votes = doc[0].votes;
+                obj.views = doc[0].views;
+                obj.created_at = doc[0].created_at;
+
+
+                results(null, responseHandler.response(true, 200, "successfully", obj));
+
+                // const obj = {};
+                // obj.id = doc._id;
+                // obj.user_id = doc.user_id._id;
+                // obj.username = doc.user_id.username;
+                // obj.title = doc.title;
+                // obj.body = doc.body;
+                // obj.tagname = doc.tagname;
+                // obj.answer_count = doc.answers != undefined ? doc.answers.length : 0;
+                // obj.votes = doc.votes;
+                // obj.views = doc.views;
+                // obj.created_at = doc.created_at;
+                // results(null, responseHandler.response(true, 200, "successfully", obj));
+            })
+            .catch((err) => {
+
+                results(responseHandler.response(false, 400, "not found", null), null);
+            });
     }).catch((err) => {
         results(responseHandler.response(false, 404, "not found", null), null);
     });
-    Post.findById({ _id: postId })
-        .populate("user_id", "username")
-        .populate("answers", "comments")
-        .lean()
-        .then((doc) => {
-            const obj = {};
-            obj.id = doc._id;
-            obj.user_id = doc.user_id._id;
-            obj.username = doc.user_id.username;
-            obj.title = doc.title;
-            obj.body = doc.body;
-            obj.tagname = doc.tagname;
-            obj.answer_count = doc.answers != undefined ? doc.answers.length : 0;
-            obj.comment_count = doc.comments != undefined ? doc.comments.length : 0;
-            obj.votes = doc.votes;
-            obj.views = doc.views;
-            obj.created_at = doc.created_at;
-            results(null, responseHandler.response(true, 200, "successfully", obj));
-        })
-        .catch((err) => {
-            results(responseHandler.response(false, 400, "not found", null), null);
-        });
+
 };
 
 module.exports.getUserPost = (req, results) => {

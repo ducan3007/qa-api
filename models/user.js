@@ -92,48 +92,55 @@ module.exports.login = async(user, result) => {
     try {
         const findUser = await Users.findOne({
             username: user.username,
-        }, { password: 1 });
+        }, { password: 1, active: 1 });
         if (findUser) {
             const isMatch = await bcrypt.compare(
                 user.password,
                 findUser.password.toString()
             );
-            if (!isMatch) {
+            if (findUser.active !== true) {
                 result(
-                    responseHandler.response(false, 400, "Incorrect password", null),
+                    responseHandler.response(false, 400, "Your Account Have Been Disabled", null),
                     null
                 );
-                return;
             } else {
-                const payload = {
-                    user: {
-                        id: findUser._id,
-                    },
-                };
+                if (!isMatch) {
+                    result(
+                        responseHandler.response(false, 400, "Incorrect Password", null),
+                        null
+                    );
+                    return;
+                } else {
+                    const payload = {
+                        user: {
+                            id: findUser._id,
+                        },
+                    };
 
-                jwt.sign(
-                    payload,
-                    process.env.KEY, { expiresIn: 36000 },
-                    (err, token) => {
-                        if (err) {
+                    jwt.sign(
+                        payload,
+                        process.env.KEY, { expiresIn: 36000 },
+                        (err, token) => {
+                            if (err) {
+                                result(
+                                    responseHandler.response(false, err.code, err.message, null),
+                                    null
+                                );
+                                return;
+                            }
                             result(
-                                responseHandler.response(false, err.code, err.message, null),
-                                null
+                                null,
+                                responseHandler.response(true, 200, "Login Successfully", {
+                                    token,
+                                })
                             );
-                            return;
                         }
-                        result(
-                            null,
-                            responseHandler.response(true, 200, "login successfully", {
-                                token,
-                            })
-                        );
-                    }
-                );
+                    );
+                }
             }
         } else {
             result(
-                responseHandler.response(false, 400, "User do not exist", null),
+                responseHandler.response(false, 400, "User Do Not Exist", null),
                 null
             );
             return;

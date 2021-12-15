@@ -78,37 +78,59 @@ module.exports.addAnswers = (req, results) => {
 };
 module.exports.getAnswer = (req, results) => {
     try {
+
         Answers.find({ post_id: req.params.id })
-            .populate("author", "username")
+            .populate("author", "username active")
             .populate("comments.Author", "username")
             .sort("-created_at")
             .lean()
             .then((result) => {
-                result = result.map((doc) => {
-                    doc.user_id = doc.author._id;
-                    doc.id = doc._id;
-                    doc.username = doc.author.username;
-                    doc.comments = doc.comments.map((comment) => {
-                        comment.username = comment.Author.username;
-                        comment.user_id = comment.Author._id;
-                        comment.id = comment._id;
-                        delete comment.Author;
-                        delete comment._id;
-                        return comment;
-                    });
-                    delete doc._id;
-                    delete doc.__v;
-                    delete doc.author;
-                    return doc;
-                });
+                const arr = [];
+                for (let a of result) {
+                    if (a.author.active === true) {
+                        arr.push({
+                            id: a._id,
+                            post_id: a.post_id,
+                            username: a.author.username,
+                            user_id: a.author._id,
+                            body: a.body,
+                            comments: a.comments,
+                            votes: a.votes,
+                            created_at: a.created_at
+                        })
+                    }
+                }
+
+                // result = result.map((doc) => {
+                //     doc.user_id = doc.author._id;
+                //     doc.id = doc._id;
+                //     doc.username = doc.author.username;
+                //     doc.comments = doc.comments.map((comment) => {
+                //         comment.username = comment.Author.username;
+                //         comment.user_id = comment.Author._id;
+                //         comment.id = comment._id;
+                //         delete comment.Author;
+                //         delete comment._id;
+                //         return comment;
+                //     });
+                //     delete doc._id;
+                //     delete doc.__v;
+                //     delete doc.author;
+                //     return doc;
+                // });
                 results(
                     null,
-                    responseHandler.response(true, 200, "successfully", result)
+                    responseHandler.response(true, 200, "successfully", arr)
                 );
             })
             .catch((err) => {
                 results(responseHandler.response(false, 400, "not found", ''), '');
             });
+
+
+
+
+
     } catch (err) {
         results(responseHandler.response(false, 500, "Server Error", ''), '');
     }
@@ -145,29 +167,33 @@ module.exports.addAnswerComment = (req, results) => {
 module.exports.getAnswerComment = (req, results) => {
     try {
         const answerId = req.params.answer_id;
-
         Answers.findById({ _id: answerId }, { comments: 1 })
-            .populate("comments.Author", "username")
+            .populate("comments.Author", "username active")
             .lean()
             .then((result) => {
-                const data = JSON.parse(JSON.stringify(result.comments)).map((doc) => {
-                    doc.username = doc.Author.username;
-                    doc.user_id = doc.Author._id;
-                    doc.id = doc._id;
-                    delete doc.Author;
-                    delete doc._id;
-                    return doc;
-                });
+                const obj = [];
+                for (let a of result.comments) {
+                    if (a.Author.active === true) {
+                        obj.push({
+                            id: a._id,
+                            user_id: a.Author._id,
+                            username: a.Author.username,
+                            body: a.body,
+                            answer_id: a.answer_id,
+                            created_at: a.created_at
+                        })
+                    }
+                }
                 results(
                     null,
-                    responseHandler.response(true, 200, "successfully", data)
+                    responseHandler.response(true, 200, "successfully", obj)
                 );
-            })
-            .catch((err) => {
+
+            }).catch((err) => {
                 results(responseHandler.response(false, 404, "Not found", null), null);
             });
-    } catch (err) {
-        results(responseHandler.response(false, 500, "Server Error", null), null);
+    } catch {
+
     }
 };
 module.exports.deleteAnswercomment = (req, results) => {

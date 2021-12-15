@@ -29,13 +29,13 @@ const getPostComment = (req, res) => {
     try {
         Post.getPostComments(req, (err, data) => {
             if (err) {
-                console.log(err);
+
                 return res.status(err.code).json(err);
             }
             return res.status(data.code).json(data);
         });
     } catch (err) {
-        console.log(err);
+
         return res
             .status(500)
             .json(responseHandler.response(false, 500, "Server Error", null));

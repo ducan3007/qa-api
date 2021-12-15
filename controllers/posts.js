@@ -48,7 +48,7 @@ const getOnePost = (req, res) => {
     try {
         Post.getOnePost(req, (err, data) => {
             if (err) {
-                console.log(err);
+
                 return res.status(err.code).json(err);
             }
             return res.status(data.code).json(data);
@@ -64,7 +64,7 @@ const votePost = (req, res) => {
     try {
         Post.vote(req, (err, data) => {
             if (err) {
-                console.log(err);
+
                 return res.status(err.code).json(err);
             }
             return res.status(data.code).json(data);
