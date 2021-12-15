@@ -81,7 +81,7 @@ module.exports.getAnswer = (req, results) => {
 
         Answers.find({ post_id: req.params.id })
             .populate("author", "username active")
-            .populate("comments.Author", "username")
+            .populate("comments.Author", "username active")
             .sort("-created_at")
             .lean()
             .then((result) => {
@@ -90,14 +90,16 @@ module.exports.getAnswer = (req, results) => {
                     if (a.author.active === true) {
                         let arr2 = [];
                         for (let b of a.comments) {
-                            arr2.push({
-                                id: b._id,
-                                username: b.Author.username,
-                                user_id: b.Author._id,
-                                body: b.body,
-                                answer_id: b.answer_id,
-                                created_at: b.created_at
-                            })
+                            if (b.Author.active === true) {
+                                arr2.push({
+                                    id: b._id,
+                                    username: b.Author.username,
+                                    user_id: b.Author._id,
+                                    body: b.body,
+                                    answer_id: b.answer_id,
+                                    created_at: b.created_at
+                                })
+                            }
                         }
 
                         arr.push({
