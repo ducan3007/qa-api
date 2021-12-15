@@ -69,7 +69,7 @@ module.exports.validatorPost = [
     .isLength({ max: 50 })
     .withMessage('Tagname is too long')
     .matches(/^[a-zA-Z0-9#++.-]+([^,~!@$%^&*()_=/\\ ]*,[^,@#/\\. ][a-zA-Z0-9#++.-]*){0,5}$/)
-    .withMessage("Invalid tagname!")
+    .withMessage("Please enter valid tagname!")
 
 ];
 module.exports.validatorAnswers = [
