@@ -13,6 +13,7 @@ const userSchema = new Schema({
     password: { type: String, required: true },
     email: { type: String, required: false },
     views: { type: Number, default: 0 },
+    active: { type: Boolean, default: true },
     created_at: { type: Date, default: Date.now },
 });
 userSchema.set("toJSON", { getters: true });
@@ -34,7 +35,7 @@ module.exports.register = async(newUser, result) => {
         );
         return;
     }
-    
+
     const salt = bcrypt.genSaltSync(10);
     newUser.password = await bcrypt.hash(newUser.password, salt);
     newUser.username = newUser.username.toLowerCase();
@@ -53,23 +54,19 @@ module.exports.register = async(newUser, result) => {
                 process.env.KEY, { expiresIn: 72000 },
                 (error, token) => {
                     if (error) {
-                        result(
-                            responseHandler.response(false, error.code, error.message, null),
+                        result(responseHandler.response(false, error.code, error.message, null),
                             null
                         );
                         return;
                     }
-                    result(
-                        null,
-                        responseHandler.response(true, 200, "User signup successfully", {
-                            token,
-                        })
-                    );
+                    result(null, responseHandler.response(true, 200, "User signup successfully", {
+                        token,
+                    }));
                 }
             );
         }
     } catch (err) {}
-    
+
 };
 
 module.exports.loadUser = (userId, result) => {
