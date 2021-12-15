@@ -229,6 +229,11 @@ module.exports.getAllUser = (results) => {
     try {
         Promise.all([
                 Users.aggregate([{
+                        $match: {
+                            active: true
+                        }
+                    },
+                    {
                         $lookup: {
                             from: "posts",
                             localField: "_id",
