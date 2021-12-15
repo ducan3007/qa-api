@@ -51,7 +51,7 @@ module.exports.register = async(newUser, result) => {
             };
             jwt.sign(
                 payload,
-                process.env.KEY, { expiresIn: 72000 },
+                process.env.KEY, { expiresIn: 3600 },
                 (error, token) => {
                     if (error) {
                         result(responseHandler.response(false, error.code, error.message, null),
