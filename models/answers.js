@@ -88,13 +88,25 @@ module.exports.getAnswer = (req, results) => {
                 const arr = [];
                 for (let a of result) {
                     if (a.author.active === true) {
+                        let arr2 = [];
+                        for (let b of a.comments) {
+                            arr2.push({
+                                id: b._id,
+                                username: b.Author.username,
+                                user_id: b.Author._id,
+                                body: b.body,
+                                answer_id: b.answer_id,
+                                created_at: b.created_at
+                            })
+                        }
+
                         arr.push({
                             id: a._id,
                             post_id: a.post_id,
                             username: a.author.username,
                             user_id: a.author._id,
                             body: a.body,
-                            comments: a.comments,
+                            comments: arr2,
                             votes: a.votes,
                             created_at: a.created_at
                         })
