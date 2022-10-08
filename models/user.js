@@ -119,7 +119,7 @@ module.exports.login = async(user, result) => {
 
                     jwt.sign(
                         payload,
-                        process.env.KEY, { expiresIn: 20 },
+                        process.env.KEY, { expiresIn: "1h" },
                         (err, token) => {
                             if (err) {
                                 result(

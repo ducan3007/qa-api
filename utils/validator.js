@@ -1,103 +1,101 @@
-const { body, check, validationResult } = require('express-validator');
+const { body, check, validationResult } = require("express-validator");
 
 module.exports.validatorUser = [
-    check('username')
+  check("username")
     .exists()
     .trim()
-    .withMessage('Username is required')
+    .withMessage("Username is required")
 
     .notEmpty()
-    .withMessage('Username cannot be blank')
+    .withMessage("Username cannot be blank")
 
     .isLength({ min: 1 })
 
     .isLength({ max: 16 })
-    .withMessage('Username must be at most 16 characters long')
+    .withMessage("Username must be at most 16 characters long")
 
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('Username contains invalid characters'),
+    .withMessage("Username contains invalid characters"),
 
-    check('password')
+  check("password")
     .exists()
     .trim()
-    .withMessage('Password is required')
+    .withMessage("Password is required")
 
     .notEmpty()
-    .withMessage('Password cannot be blank')
+    .withMessage("Password cannot be blank")
 
     .isLength({ min: 1 })
 
     .isLength({ max: 50 })
-    .withMessage('Password must be at most 50 characters long')
-
+    .withMessage("Password must be at most 50 characters long"),
 ];
 
 module.exports.validatorPost = [
-    check('title')
+  check("title")
     .exists()
     .trim()
-    .withMessage('Post title is required')
+    .withMessage("Post title is required")
 
     .notEmpty()
-    .withMessage('Post title cannot be blank')
+    .withMessage("Post title cannot be blank")
 
     .isLength({ min: 1 })
     .isLength({ max: 200 })
-    .withMessage('Post title must be at most 200 characters long'),
-    check('body')
+    .withMessage("Post title must be at most 200 characters long"),
+  check("body")
     .exists()
     .trim()
-    .withMessage('Please enter valid body!')
+    .withMessage("Please enter valid body!")
 
     .notEmpty()
-    .withMessage('Please enter valid body !')
+    .withMessage("Please enter valid body !")
 
     .isLength({ min: 1 })
-    .withMessage('Body must be at least 10 characters long')
-    .isLength({ max: 1500 })
-    .withMessage('Body is at most 1500 character long'),
+    .withMessage("Body must be at least 10 characters long"),
 
-    check('tagname')
+  check("tagname")
     .exists()
     .trim()
-    .withMessage('Please enter valid tagname!')
+    .withMessage("Please enter valid tagname!")
 
     .notEmpty()
-    .withMessage('Please enter valid tagname!')
+    .withMessage("Please enter valid tagname!")
     .toLowerCase()
 
     .isLength({ max: 50 })
-    .withMessage('Tagname is too long')
-    .matches(/^[a-zA-Z0-9#++.-]+([^,~!@$%^&*()_=/\\ ]*,[^,@#/\\. ][a-zA-Z0-9#++.-]*){0,5}$/)
-    .withMessage("Please enter valid tagname!")
-
+    .withMessage("Tagname is too long")
+    .matches(
+      /^[a-zA-Z0-9#++.-]+([^,~!@$%^&*()_=/\\ ]*,[^,@#/\\. ][a-zA-Z0-9#++.-]*){0,5}$/
+    )
+    .withMessage("Please enter valid tagname!"),
 ];
 module.exports.validatorAnswers = [
-    check('text')
+  check("text")
     .exists()
     .trim()
-    .withMessage('Answers is required')
+    .withMessage("Answers is required")
 
     .notEmpty()
-    .withMessage('Answers cannot be blank')
+    .withMessage("Answers cannot be blank")
 
     .isLength({ min: 1 })
 
     .isLength({ max: 4000 })
-    .withMessage('Answers is too long'),
+    .withMessage("Answers is too long"),
 ];
 module.exports.validatorComments = [
-    check('body')
+  check("body")
     .exists()
     .trim()
-    .withMessage('comment is required')
+    .withMessage("comment is required")
 
     .notEmpty()
-    .withMessage('comment cannot be blank')
+    .withMessage("comment cannot be blank")
 
     .isLength({ min: 1 })
-    .withMessage('comment invalid')
+    .withMessage("comment invalid")
 
     .isLength({ max: 200 })
-    .withMessage('comment is too long'),
+    .withMessage("comment is too long"),
 ];
